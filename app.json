@@ -3,11 +3,16 @@
     "name": "capstone",
     "slug": "capstone",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "requireFullScreen": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "VERIA uses the camera to capture scenes and describe them aloud for assistive visual guidance.",
+        "NSSpeechRecognitionUsageDescription": "VERIA reads AI descriptions aloud to help you understand your surroundings."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -15,10 +20,26 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "permissions": ["android.permission.CAMERA"],
+      "usesCleartextTraffic": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow VERIA to use the camera to describe your surroundings."
+        }
+      ],
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "DEFAULT"
+        }
+      ]
+    ]
   }
 }
