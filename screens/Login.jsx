@@ -7,8 +7,12 @@ import {
   StyleSheet,
 } from 'react-native';
 
-export default function LoginScreen() {
+import AppNavigator from '/capstone/navigator/Application_nav';
+
+export default function LoginScreen( {navigation} ) {
   return (
+
+  <>
     <View style={styles.container}>
       <Text style={styles.title}>VERIA</Text>
 
@@ -23,7 +27,7 @@ export default function LoginScreen() {
         style={styles.input}
       />
 
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity onPress={() =>navigation.navigate("Register")} style={styles.button}>
         <Text style={styles.buttonText}>Iniciar Sesión</Text>
       </TouchableOpacity>
 
@@ -31,6 +35,7 @@ export default function LoginScreen() {
         <Text>Crear cuenta</Text>
       </TouchableOpacity>
     </View>
+     </>
   );
 }
 

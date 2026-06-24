@@ -1,19 +1,19 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import React from 'react';
-import AppNavigator from './src/navigation/Application_nav';
+import AppNavigator from '/capstone/navigator/Application_nav';
 
-export default function App() {
-  return <AppNavigator />;
-}
+
+const nav = AppNavigator(Navigation);
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text></Text>
-      <StatusBar style="auto" />
-    </View>
+    <view>
+      <text>Hola mundo</text>
+      <button onClick={navigation.navigate(LoginScreen)}>Ir a login</button>
+    </view>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
