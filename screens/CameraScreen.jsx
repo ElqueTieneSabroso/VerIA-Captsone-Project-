@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AccessibilityInfo,
@@ -6,20 +6,55 @@ import {
   StyleSheet,
   Text,
   View,
-} from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as ScreenOrientation from 'expo-screen-orientation';
-import * as Speech from 'expo-speech';
-import { usePhysicalRightPosition } from '../hooks/usePhysicalRightPosition';
-import { describeImageWithOllama } from '../services/ollama';
+} from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import * as ScreenOrientation from "expo-screen-orientation";
+import * as Speech from "expo-speech";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { analyzeImageWithBackend } from "../services/ollama";
+
+const MAX_CAPTURE_SIDE = 1024;
+
+function parsePictureSize(size) {
+  const [width, height] = size.split("x").map(Number);
+
+  if (!Number.isFinite(width) || !Number.isFinite(height)) {
+    return null;
+  }
+
+  return {
+    size,
+    width,
+    height,
+    longestSide: Math.max(width, height),
+  };
+}
+
+function pickPictureSize(sizes) {
+  const parsedSizes = sizes
+    .map(parsePictureSize)
+    .filter(Boolean)
+    .sort((a, b) => b.longestSide - a.longestSide);
+
+  if (!parsedSizes.length) {
+    return undefined;
+  }
+
+  return (
+    parsedSizes.find((item) => item.longestSide <= MAX_CAPTURE_SIDE) ??
+    parsedSizes[parsedSizes.length - 1]
+  ).size;
+}
 
 export default function CameraScreen() {
   const cameraRef = useRef(null);
+  const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
+  const [pictureSize, setPictureSize] = useState();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
-  const captureButtonStyle = usePhysicalRightPosition();
+  const [statusMessage, setStatusMessage] = useState("Listo para capturar.");
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     ScreenOrientation.unlockAsync();
@@ -37,42 +72,63 @@ export default function CameraScreen() {
     AccessibilityInfo.announceForAccessibility(message);
   }, []);
 
+  const handleCameraReady = useCallback(async () => {
+    setCameraReady(false);
+
+    try {
+      const sizes = await cameraRef.current?.getAvailablePictureSizesAsync();
+      const selectedSize = pickPictureSize(sizes ?? []);
+
+      if (selectedSize) {
+        setPictureSize(selectedSize);
+      }
+    } catch {
+      setPictureSize(undefined);
+    } finally {
+      setCameraReady(true);
+    }
+  }, []);
+
   const handleCapture = useCallback(async () => {
     if (!cameraRef.current || !cameraReady || isProcessing) {
       return;
     }
 
     setIsProcessing(true);
-    announce('Capturing image. Please wait.');
+    setHasError(false);
+    announce("Capturando imagen. Espera un momento.");
 
     try {
       const photo = await cameraRef.current.takePictureAsync({
         base64: true,
-        quality: 0.7,
+        quality: 0.35,
         shutterSound: true,
       });
 
       if (!photo?.base64) {
-        throw new Error('Could not capture image data.');
+        throw new Error("No se pudo capturar la imagen.");
       }
 
-      announce('Analyzing image with AI.');
-      const description = await describeImageWithOllama(photo.base64);
+      announce("Analizando imagen con inteligencia artificial.");
+      const description = await analyzeImageWithBackend(photo.base64);
 
-      announce('Reading description aloud.');
+      announce("Leyendo descripcion en voz alta.");
       await new Promise((resolve, reject) => {
         Speech.speak(description, {
-          language: 'en',
+          language: "es-MX",
           onDone: resolve,
           onStopped: resolve,
           onError: (error) => reject(error),
         });
       });
+
+      setStatusMessage(description);
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : 'Something went wrong while analyzing the image.';
+          : "Algo salio mal al analizar la imagen.";
+      setHasError(true);
       announce(`Error. ${message}`);
     } finally {
       setIsProcessing(false);
@@ -111,7 +167,8 @@ export default function CameraScreen() {
         ref={cameraRef}
         style={StyleSheet.absoluteFill}
         facing="back"
-        onCameraReady={() => setCameraReady(true)}
+        pictureSize={pictureSize}
+        onCameraReady={handleCameraReady}
       />
 
       {isProcessing && (
@@ -121,10 +178,19 @@ export default function CameraScreen() {
         </View>
       )}
 
+      {!isProcessing && statusMessage ? (
+        <View
+          style={[styles.statusPanel, hasError && styles.statusPanelError]}
+          accessibilityLiveRegion="polite"
+        >
+          <Text style={styles.statusText}>{statusMessage}</Text>
+        </View>
+      ) : null}
+
       <Pressable
         style={({ pressed }) => [
           styles.captureButton,
-          captureButtonStyle,
+          { bottom: Math.max(insets.bottom + 12, 16) },
           pressed && styles.captureButtonPressed,
           isProcessing && styles.captureButtonDisabled,
         ]}
@@ -132,8 +198,11 @@ export default function CameraScreen() {
         disabled={isProcessing || !cameraReady}
         accessibilityRole="button"
         accessibilityLabel="Capture and describe scene"
-        accessibilityHint="Takes a photo and reads an AI description aloud. Button stays on the right side of the phone."
-        accessibilityState={{ disabled: isProcessing || !cameraReady, busy: isProcessing }}
+        accessibilityHint="Takes a photo and reads an AI description aloud."
+        accessibilityState={{
+          disabled: isProcessing || !cameraReady,
+          busy: isProcessing,
+        }}
       >
         <View style={styles.captureButtonInner} />
       </Pressable>
@@ -144,48 +213,52 @@ export default function CameraScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
   },
   centered: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   permissionText: {
     fontSize: 18,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 24,
     lineHeight: 26,
   },
   permissionButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderRadius: 12,
     minHeight: 56,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   permissionButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   captureButton: {
+    position: "absolute",
+    alignSelf: "center",
+    width: 88,
+    height: 88,
     borderRadius: 44,
     borderWidth: 4,
-    borderColor: '#ffffff',
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderColor: "#ffffff",
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 10,
   },
   captureButtonInner: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   captureButtonPressed: {
     opacity: 0.85,
@@ -196,16 +269,36 @@ const styles = StyleSheet.create({
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
     zIndex: 5,
   },
   processingText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 18,
     marginTop: 16,
-    textAlign: 'center',
+    textAlign: "center",
+  },
+  statusPanel: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    top: 56,
+    backgroundColor: "rgba(0, 0, 0, 0.68)",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    zIndex: 4,
+  },
+  statusPanelError: {
+    backgroundColor: "rgba(145, 28, 28, 0.88)",
+  },
+  statusText: {
+    color: "#ffffff",
+    fontSize: 16,
+    lineHeight: 22,
+    textAlign: "center",
   },
 });
