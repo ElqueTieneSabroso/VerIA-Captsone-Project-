@@ -16,6 +16,14 @@ app.get("/", (req, res) => {
 });
 
 app.post("/analyze", async (req, res) => {
+  const controller = new AbortController();
+
+  res.on("close", () => {
+    if (!res.writableEnded) {
+      controller.abort();
+    }
+  });
+
   try {
     const imageBase64 = req.body?.imageBase64;
 
@@ -23,23 +31,36 @@ app.post("/analyze", async (req, res) => {
       return res.status(400).json({ error: "No image uploaded" });
     }
 
-    const ollamaResponse = await axios.post(OLLAMA_URL, {
-      model: MODEL,
-      messages: [
-        {
-          role: "user",
-          content:
-            "You are Veria, an accessibility assistant for visually impaired users. Describe the image clearly and briefly. Mention important objects, text, colors, obstacles, and possible risks. Answer in Spanish.",
-          images: [imageBase64],
-        },
-      ],
-      stream: false,
-    });
+    const ollamaResponse = await axios.post(
+      OLLAMA_URL,
+      {
+        model: MODEL,
+        messages: [
+          {
+            role: "user",
+            content:
+              "You are an AI whose purpose is to help visually impaired people understand what you can see in a picture and as such your response must be short and straight to the point, avoiding unnecesary details, prioritize concise and quick answers as to not waste time and focus on describing individual objects. If the image provided contains objects that are close to each other explain how they work as a system for example: 'the water bottle is behind a pencil case', in the case that you are not completely sure of the item youre seeing you may describe it briefly for example: 'There is a red bottle of indistinct contents' and you may add a small 'could be...' if necessary. Maximum 25 words short and to the point tone, Answer in Spanish.",
+            images: [imageBase64],
+          },
+        ],
+        stream: false,
+      },
+      { signal: controller.signal },
+    );
+
+    if (controller.signal.aborted) {
+      return;
+    }
 
     res.json({
       result: ollamaResponse.data.message.content,
     });
   } catch (error) {
+    if (controller.signal.aborted || axios.isCancel(error)) {
+      console.log("AI request canceled by client");
+      return;
+    }
+
     console.error("AI error:", error.message);
 
     res.status(500).json({

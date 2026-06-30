@@ -3,9 +3,15 @@ import { ANALYZE_ENDPOINT } from "../config/ollama";
 
 const REQUEST_TIMEOUT_MS = 300_000;
 
-export async function analyzeImageWithBackend(imageBase64) {
+export async function analyzeImageWithBackend(imageBase64, signal) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const abortRequest = () => controller.abort();
+
+  signal?.addEventListener("abort", abortRequest, { once: true });
+  if (signal?.aborted) {
+    controller.abort();
+  }
 
   try {
     const response = await fetch(ANALYZE_ENDPOINT, {
@@ -36,7 +42,7 @@ export async function analyzeImageWithBackend(imageBase64) {
     const message = error instanceof Error ? error.message : "";
 
     if (
-      error.name === "AbortError" ||
+      error?.name === "AbortError" ||
       message.toLowerCase().includes("canceled")
     ) {
       throw new Error(
@@ -45,6 +51,7 @@ export async function analyzeImageWithBackend(imageBase64) {
     }
     throw error;
   } finally {
+    signal?.removeEventListener("abort", abortRequest);
     clearTimeout(timer);
   }
 }

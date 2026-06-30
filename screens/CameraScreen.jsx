@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AccessibilityInfo,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -13,7 +14,7 @@ import * as Speech from "expo-speech";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { analyzeImageWithBackend } from "../services/ollama";
 
-const MAX_CAPTURE_SIDE = 1024;
+const MAX_CAPTURE_SIDE = 720;
 
 function parsePictureSize(size) {
   const [width, height] = size.split("x").map(Number);
@@ -48,10 +49,13 @@ function pickPictureSize(sizes) {
 
 export default function CameraScreen() {
   const cameraRef = useRef(null);
+  const activeRequestRef = useRef(null);
+  const captureRunRef = useRef(0);
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
   const [pictureSize, setPictureSize] = useState();
+  const [capturedPhotoUri, setCapturedPhotoUri] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusMessage, setStatusMessage] = useState("Listo para capturar.");
   const [hasError, setHasError] = useState(false);
@@ -60,6 +64,7 @@ export default function CameraScreen() {
     ScreenOrientation.unlockAsync();
 
     return () => {
+      activeRequestRef.current?.abort();
       Speech.stop();
       ScreenOrientation.lockAsync(
         ScreenOrientation.OrientationLock.PORTRAIT_UP,
@@ -90,18 +95,27 @@ export default function CameraScreen() {
   }, []);
 
   const handleCapture = useCallback(async () => {
-    if (!cameraRef.current || !cameraReady || isProcessing) {
+    if (!cameraRef.current || !cameraReady) {
       return;
     }
 
+    activeRequestRef.current?.abort();
+    Speech.stop();
+
+    const runId = captureRunRef.current + 1;
+    const requestController = new AbortController();
+
+    captureRunRef.current = runId;
+    activeRequestRef.current = requestController;
     setIsProcessing(true);
     setHasError(false);
+    setCapturedPhotoUri(null);
     announce("Capturando imagen. Espera un momento.");
 
     try {
       const photo = await cameraRef.current.takePictureAsync({
         base64: true,
-        quality: 0.35,
+        quality: 0.1,
         shutterSound: true,
       });
 
@@ -109,8 +123,20 @@ export default function CameraScreen() {
         throw new Error("No se pudo capturar la imagen.");
       }
 
+      if (captureRunRef.current !== runId) {
+        return;
+      }
+
+      setCapturedPhotoUri(photo.uri ?? null);
       announce("Analizando imagen con inteligencia artificial.");
-      const description = await analyzeImageWithBackend(photo.base64);
+      const description = await analyzeImageWithBackend(
+        photo.base64,
+        requestController.signal,
+      );
+
+      if (captureRunRef.current !== runId) {
+        return;
+      }
 
       announce("Leyendo descripcion en voz alta.");
       await new Promise((resolve, reject) => {
@@ -122,8 +148,16 @@ export default function CameraScreen() {
         });
       });
 
+      if (captureRunRef.current !== runId) {
+        return;
+      }
+
       setStatusMessage(description);
     } catch (error) {
+      if (requestController.signal.aborted || captureRunRef.current !== runId) {
+        return;
+      }
+
       const message =
         error instanceof Error
           ? error.message
@@ -131,9 +165,12 @@ export default function CameraScreen() {
       setHasError(true);
       announce(`Error. ${message}`);
     } finally {
-      setIsProcessing(false);
+      if (captureRunRef.current === runId) {
+        activeRequestRef.current = null;
+        setIsProcessing(false);
+      }
     }
-  }, [announce, cameraReady, isProcessing]);
+  }, [announce, cameraReady]);
 
   if (!permission) {
     return (
@@ -171,6 +208,15 @@ export default function CameraScreen() {
         onCameraReady={handleCameraReady}
       />
 
+      {capturedPhotoUri && isProcessing ? (
+        <Image
+          source={{ uri: capturedPhotoUri }}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+        />
+      ) : null}
+
       {isProcessing && (
         <View style={styles.processingOverlay} accessibilityLiveRegion="polite">
           <ActivityIndicator size="large" color="#ffffff" />
@@ -192,15 +238,14 @@ export default function CameraScreen() {
           styles.captureButton,
           { bottom: Math.max(insets.bottom + 12, 16) },
           pressed && styles.captureButtonPressed,
-          isProcessing && styles.captureButtonDisabled,
         ]}
         onPress={handleCapture}
-        disabled={isProcessing || !cameraReady}
+        disabled={!cameraReady}
         accessibilityRole="button"
         accessibilityLabel="Capture and describe scene"
-        accessibilityHint="Takes a photo and reads an AI description aloud."
+        accessibilityHint="Takes a new photo, cancels any current description, and reads a fresh AI description aloud."
         accessibilityState={{
-          disabled: isProcessing || !cameraReady,
+          disabled: !cameraReady,
           busy: isProcessing,
         }}
       >
@@ -264,22 +309,27 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     transform: [{ scale: 0.96 }],
   },
-  captureButtonDisabled: {
-    opacity: 0.5,
-  },
   processingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    position: "absolute",
+    left: 16,
+    right: 16,
+    top: 56,
+    backgroundColor: "rgba(0, 0, 0, 0.68)",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: "row",
+    gap: 12,
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
     zIndex: 5,
   },
   processingText: {
     color: "#ffffff",
-    fontSize: 18,
-    marginTop: 16,
-    textAlign: "center",
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    textAlign: "left",
   },
   statusPanel: {
     position: "absolute",
