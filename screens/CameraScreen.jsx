@@ -95,7 +95,22 @@ export default function CameraScreen() {
   }, []);
 
   const handleCapture = useCallback(async () => {
-    if (!cameraRef.current || !cameraReady) {
+    if (!cameraReady) {
+      return;
+    }
+
+    if (isProcessing) {
+      captureRunRef.current += 1;
+      activeRequestRef.current?.abort();
+      activeRequestRef.current = null;
+      Speech.stop();
+      setIsProcessing(false);
+      setHasError(false);
+      announce("Analisis cancelado. Presiona de nuevo para tomar otra foto.");
+      return;
+    }
+
+    if (!cameraRef.current) {
       return;
     }
 
@@ -170,7 +185,7 @@ export default function CameraScreen() {
         setIsProcessing(false);
       }
     }
-  }, [announce, cameraReady]);
+  }, [announce, cameraReady, isProcessing]);
 
   if (!permission) {
     return (
