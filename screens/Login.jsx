@@ -7,8 +7,16 @@ import {
   StyleSheet,
 } from 'react-native';
 
+<<<<<<< HEAD
 export default function LoginScreen({ navigation }) {
+=======
+import AppNavigator from '/capstone/navigator/Application_nav';
+
+export default function LoginScreen( {navigation} ) {
+>>>>>>> 6aafc439183061fe49d75272e12fecfd7571b28c
   return (
+
+  <>
     <View style={styles.container}>
       <Text style={styles.title} accessibilityRole="header">
         VERIA
@@ -29,6 +37,7 @@ export default function LoginScreen({ navigation }) {
         accessibilityLabel="Password"
       />
 
+<<<<<<< HEAD
       <TouchableOpacity
         style={styles.button}
         onPress={() => navigation.navigate('Camera')}
@@ -36,6 +45,9 @@ export default function LoginScreen({ navigation }) {
         accessibilityLabel="Iniciar sesión"
         accessibilityHint="Sign in and go to the camera screen"
       >
+=======
+      <TouchableOpacity onPress={() =>navigation.navigate("Register")} style={styles.button}>
+>>>>>>> 6aafc439183061fe49d75272e12fecfd7571b28c
         <Text style={styles.buttonText}>Iniciar Sesión</Text>
       </TouchableOpacity>
 
@@ -43,6 +55,7 @@ export default function LoginScreen({ navigation }) {
         <Text>Crear cuenta</Text>
       </TouchableOpacity>
     </View>
+     </>
   );
 }
 
