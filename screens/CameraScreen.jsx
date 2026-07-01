@@ -9,12 +9,14 @@ import {
   View,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import * as Haptics from "expo-haptics";
 import * as ScreenOrientation from "expo-screen-orientation";
 import * as Speech from "expo-speech";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { analyzeImageWithBackend } from "../services/ollama";
 
 const MAX_CAPTURE_SIDE = 720;
+const DOUBLE_PRESS_DELAY_MS = 300;
 
 function parsePictureSize(size) {
   const [width, height] = size.split("x").map(Number);
@@ -51,6 +53,7 @@ export default function CameraScreen() {
   const cameraRef = useRef(null);
   const activeRequestRef = useRef(null);
   const captureRunRef = useRef(0);
+  const pressTimerRef = useRef(null);
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
@@ -58,12 +61,16 @@ export default function CameraScreen() {
   const [capturedPhotoUri, setCapturedPhotoUri] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusMessage, setStatusMessage] = useState("Listo para capturar.");
+  const [lastDescription, setLastDescription] = useState("");
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     ScreenOrientation.unlockAsync();
 
     return () => {
+      if (pressTimerRef.current) {
+        clearTimeout(pressTimerRef.current);
+      }
       activeRequestRef.current?.abort();
       Speech.stop();
       ScreenOrientation.lockAsync(
@@ -76,6 +83,53 @@ export default function CameraScreen() {
     setStatusMessage(message);
     AccessibilityInfo.announceForAccessibility(message);
   }, []);
+
+  const vibrate = useCallback((type = "selection") => {
+    if (type === "cancel") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(
+        () => {},
+      );
+      return;
+    }
+
+    if (type === "success") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {},
+      );
+      return;
+    }
+
+    Haptics.selectionAsync().catch(() => {});
+  }, []);
+
+  const cancelCurrentAction = useCallback(() => {
+    captureRunRef.current += 1;
+    activeRequestRef.current?.abort();
+    activeRequestRef.current = null;
+    Speech.stop();
+    setIsProcessing(false);
+    setHasError(false);
+    setLastDescription("");
+    setCapturedPhotoUri(null);
+    vibrate("cancel");
+    announce("Descripcion cancelada. Presiona una vez para tomar otra foto.");
+  }, [announce, vibrate]);
+
+  const rereadDescription = useCallback(() => {
+    if (!lastDescription) {
+      vibrate("selection");
+      announce("No hay descripcion para repetir.");
+      return;
+    }
+
+    Speech.stop();
+    vibrate("selection");
+    announce("Repitiendo descripcion.");
+    Speech.speak(lastDescription, {
+      language: "es-MX",
+      onError: () => {},
+    });
+  }, [announce, lastDescription, vibrate]);
 
   const handleCameraReady = useCallback(async () => {
     setCameraReady(false);
@@ -95,27 +149,13 @@ export default function CameraScreen() {
   }, []);
 
   const handleCapture = useCallback(async () => {
-    if (!cameraReady) {
-      return;
-    }
-
-    if (isProcessing) {
-      captureRunRef.current += 1;
-      activeRequestRef.current?.abort();
-      activeRequestRef.current = null;
-      Speech.stop();
-      setIsProcessing(false);
-      setHasError(false);
-      announce("Analisis cancelado. Presiona de nuevo para tomar otra foto.");
-      return;
-    }
-
-    if (!cameraRef.current) {
+    if (!cameraReady || !cameraRef.current) {
       return;
     }
 
     activeRequestRef.current?.abort();
     Speech.stop();
+    vibrate("selection");
 
     const runId = captureRunRef.current + 1;
     const requestController = new AbortController();
@@ -124,6 +164,7 @@ export default function CameraScreen() {
     activeRequestRef.current = requestController;
     setIsProcessing(true);
     setHasError(false);
+    setLastDescription("");
     setCapturedPhotoUri(null);
     announce("Capturando imagen. Espera un momento.");
 
@@ -154,6 +195,8 @@ export default function CameraScreen() {
       }
 
       announce("Leyendo descripcion en voz alta.");
+      setLastDescription(description);
+      vibrate("success");
       await new Promise((resolve, reject) => {
         Speech.speak(description, {
           language: "es-MX",
@@ -185,7 +228,38 @@ export default function CameraScreen() {
         setIsProcessing(false);
       }
     }
-  }, [announce, cameraReady, isProcessing]);
+  }, [announce, cameraReady, vibrate]);
+
+  const handleButtonPress = useCallback(() => {
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+      cancelCurrentAction();
+      return;
+    }
+
+    pressTimerRef.current = setTimeout(() => {
+      pressTimerRef.current = null;
+
+      if (isProcessing) {
+        rereadDescription();
+        return;
+      }
+
+      if (lastDescription) {
+        rereadDescription();
+        return;
+      }
+
+      handleCapture();
+    }, DOUBLE_PRESS_DELAY_MS);
+  }, [
+    cancelCurrentAction,
+    handleCapture,
+    isProcessing,
+    lastDescription,
+    rereadDescription,
+  ]);
 
   if (!permission) {
     return (
@@ -254,11 +328,11 @@ export default function CameraScreen() {
           { bottom: Math.max(insets.bottom + 12, 16) },
           pressed && styles.captureButtonPressed,
         ]}
-        onPress={handleCapture}
+        onPress={handleButtonPress}
         disabled={!cameraReady}
         accessibilityRole="button"
         accessibilityLabel="Capture and describe scene"
-        accessibilityHint="Takes a new photo, cancels any current description, and reads a fresh AI description aloud."
+        accessibilityHint="Press once to re-read the latest description. Press twice to cancel the current analysis or speech."
         accessibilityState={{
           disabled: !cameraReady,
           busy: isProcessing,
