@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-
+import AppNavigator from '../navigator/Application_nav';
 export default function RegisterScreen() {
   return (
     <View style={styles.container}>

@@ -2,9 +2,9 @@ import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-import LoginScreen from "./screens/Login";
-import SignInScreen from "./screens/SignIn";
-import CameraScreen from "./screens/CameraScreen";
+import LoginScreen from "../screens/Login";
+import SignInScreen from "../screens/SignIn";
+import CameraScreen from "../screens/CameraScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -17,7 +17,6 @@ export default function AppNavigator() {
           component={LoginScreen}
           options={{ headerShown: false }}
         />
-
         <Stack.Screen
           name="Register"
           component={SignInScreen}
@@ -26,9 +25,7 @@ export default function AppNavigator() {
         <Stack.Screen
           name="Camera"
           component={CameraScreen}
-          options={{
-            headerShown: false,
-          }}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -1,11 +1,11 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-} from 'react-native';
+} from "react-native";
 
 export default function LoginScreen({ navigation }) {
   return (
@@ -15,7 +15,7 @@ export default function LoginScreen({ navigation }) {
       </Text>
 
       <TextInput
-        placeholder="Correo"
+        placeholder="correo"
         style={styles.input}
         accessibilityLabel="Email"
         autoCapitalize="none"
@@ -23,7 +23,7 @@ export default function LoginScreen({ navigation }) {
       />
 
       <TextInput
-        placeholder="Contraseña"
+        placeholder="contrasena"
         secureTextEntry
         style={styles.input}
         accessibilityLabel="Password"
@@ -31,15 +31,19 @@ export default function LoginScreen({ navigation }) {
 
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation.navigate('Camera')}
+        onPress={() => navigation.navigate("Camera")}
         accessibilityRole="button"
-        accessibilityLabel="Iniciar sesión"
+        accessibilityLabel="Iniciar sesion"
         accessibilityHint="Sign in and go to the camera screen"
       >
-        <Text style={styles.buttonText}>Iniciar Sesión</Text>
+        <Text style={styles.buttonText}>Iniciar Sesion</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Crear cuenta">
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel="Crear cuenta"
+        onPress={() => navigation.navigate("Register")}
+      >
         <Text>Crear cuenta</Text>
       </TouchableOpacity>
     </View>
@@ -49,13 +53,13 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 20,
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
+    textAlign: "center",
     marginBottom: 40,
   },
   input: {
@@ -66,16 +70,16 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     padding: 15,
     borderRadius: 10,
     marginBottom: 20,
     minHeight: 48,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   buttonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
+    color: "white",
+    textAlign: "center",
+    fontWeight: "bold",
   },
 });

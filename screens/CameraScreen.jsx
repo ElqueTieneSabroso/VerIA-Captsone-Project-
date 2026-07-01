@@ -130,7 +130,7 @@ export default function CameraScreen() {
     try {
       const photo = await cameraRef.current.takePictureAsync({
         base64: true,
-        quality: 0.1,
+        quality: 0.25,
         shutterSound: true,
       });
 
