@@ -1,10 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import React from 'react';
-import AppNavigator from '/capstone/navigator/Application_nav';
-
+import AppNavigator from '../navigator/Application_nav';
 
 const nav = AppNavigator(Navigation);
+
 export default function App() {
   return (
     <view>

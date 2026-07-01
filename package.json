@@ -1,18 +1,25 @@
 {
   "name": "capstone",
   "version": "1.0.0",
-  "main": "/capstone/navigator/Application_nav",
+  "main": "/capstone/index.js",
   "dependencies": {
     "@react-navigation/native": "^7.3.3",
     "@react-navigation/native-stack": "^7.17.5",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "expo": "~56.0.12",
     "expo-constants": "~56.0.18",
     "expo-linking": "~56.0.14",
     "expo-router": "~56.2.11",
     "expo-status-bar": "~56.0.4",
+    "express": "^5.2.1",
+    "express-validator": "^7.3.2",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.22.5",
     "react": "19.2.3",
     "react-native": "0.85.3",
-    "react-native-safe-area-context": "^5.8.0",
+    "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2"
   },
   "scripts": {
@@ -29,5 +36,18 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
     "prettier": "^3.8.4"
-  }
+  },
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ElqueTieneSabroso/VerIA-Captsone-Project-.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ElqueTieneSabroso/VerIA-Captsone-Project-/issues"
+  },
+  "homepage": "https://github.com/ElqueTieneSabroso/VerIA-Captsone-Project-#readme"
 }

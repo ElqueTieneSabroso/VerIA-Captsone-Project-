@@ -2,8 +2,8 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {text, view, button} from 'react-native'
-import LoginScreen from '/capstone/screens/Login'
-import RegisterScreen from '/capstone/screens/SignIn';
+import LoginScreen from '../screens/Login';
+import RegisterScreen from '../screens/SignIn';
 
 const Stack = createNativeStackNavigator();
 
