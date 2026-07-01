@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const auth = require("../controllers/authController");
+const auth = require("../dbconfig/controller");
 
 const {registerValidation} = require("../dbconfig/validation");
 router.post("/register", registerValidation, auth.register);

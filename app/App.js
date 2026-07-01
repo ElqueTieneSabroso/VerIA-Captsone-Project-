@@ -2,8 +2,9 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import React from 'react';
 import AppNavigator from '../navigator/Application_nav';
+import LoginScreen from '../screens/Login';
 
-const nav = AppNavigator(Navigation);
+const navigation = AppNavigator(navigation);
 
 export default function App() {
   return (

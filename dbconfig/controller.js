@@ -24,3 +24,40 @@ exports.register = async (req,res)=>{
         res.status(500).json({mensaje:"Error del servidor"});
     }
 };
+
+exports.login = async (req,res)=>{ const {correo,contrasena} = req.body;
+    if(!correo || !contrasena){
+        return res.status(400).json({
+            mensaje:"Todos los campos son obligatorios"
+        });
+    }
+    try{
+        const [usuario] = await db.query(
+            "SELECT * FROM Usuarios WHERE Correo=?",
+            [correo]
+        );
+        if(usuario.length==0){
+            return res.status(404).json({
+                mensaje:"Usuario no encontrado"
+            });
+        }
+        const valido = await bcrypt.compare(
+            contrasena,
+            usuario[0].Contrasena
+        );
+        if(!valido){
+            return res.status(401).json({
+                mensaje:"Contraseña incorrecta"
+            });
+        }
+        res.json({
+            mensaje:"Inicio de sesión correcto",
+            usuario:usuario[0]
+        });
+    }
+    catch(error){
+        res.status(500).json({
+            mensaje:"Error del servidor"
+        });
+    }
+};
