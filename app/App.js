@@ -3,16 +3,15 @@ import { StyleSheet, Text, View } from 'react-native';
 import React from 'react';
 import AppNavigator from '../navigator/Application_nav';
 import LoginScreen from '../screens/Login';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 const navigation = AppNavigator(navigation);
 
 export default function App() {
-  return (
-    <view>
-      <text>Hola mundo</text>
-      <button onClick={navigation.navigate(LoginScreen)}>Ir a login</button>
-    </view>
-  );
+  return <AppNavigator /> ;
+
+
 }
 
 
