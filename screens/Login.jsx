@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   View,
@@ -8,32 +7,31 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
-import { useNavigation } from "@react-navigation/native";
+import axios from "axios";
 
-import AppNavigator from '../navigator/Application_nav';
 
 export default function LoginScreen( { navigation } ) {
     const [correo, setCorreo] = useState("");
     const [contrasena, setContrasena] = useState("");
-    const iniciarSesion = () => {
-      if (!correo.trim()) {
-      Alert.alert("Error", "Ingrese su correo electrónico");
-      return;
-    }
 
-    if (!contrasena.trim()) {
-      Alert.alert("Error", "Ingrese su contraseña");
-      return;
+const iniciarSesion = async () => {
+  try {const respuesta = await axios.post("http://192.168.1.18:3000/api/auth/login",
+    {
+      correo: correo,
+      contrasena: contrasena
     }
-    const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!regexCorreo.test(correo)) {
-      Alert.alert("Error", "Ingrese un correo válido");
-      return;
+  );
+      alert(respuesta.data.mensaje);
+      navigation.navigate("Welcome");
+}
+  catch(error){
+    if(error.response){
+      alert(error.response.data.mensaje);
+    }else{
+          alert("No se pudo conectar con el servidor.");
+        }
     }
-
-    navigation.navigate("Register");
-  };
+};
 return (
 <View style={styles.container}>
       <Text style={styles.title}>VERIA</Text>
@@ -52,71 +50,56 @@ return (
         secureTextEntry
         style={styles.input}
       />
-      <TouchableOpacity
-        style={styles.button}
-        onPress={iniciarSesion}
-      >
+      <TouchableOpacity style={styles.button} onPress={iniciarSesion}>
         <Text style={styles.buttonText}>Iniciar Sesión</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate("Register")}
-      >
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Register")}>
         <Text style={styles.buttonText}>¿No tienes cuenta?</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.navigate("Welcome")}
-      >
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("Welcome")}>
         <Text style={styles.buttonText}>Regresar</Text>
       </TouchableOpacity>
-
     </View>
   );
-}
+  };
+
+
 
 const styles = StyleSheet.create({
-
   container:{
     flex:1,
     justifyContent:'center',
     padding:20,
   },
-
   title:{
     fontSize:32,
     fontWeight:'bold',
     textAlign:'center',
     marginBottom:40,
   },
-
   input:{
     borderWidth:1,
     borderRadius:10,
     padding:12,
     marginBottom:15,
   },
-
   button:{
     backgroundColor:'#007AFF',
     padding:15,
     borderRadius:10,
     marginBottom:15,
   },
-
   backButton:{
     backgroundColor:'#666',
     padding:15,
     borderRadius:10,
     marginTop:10,
   },
-
   buttonText:{
     color:'white',
     textAlign:'center',
     fontWeight:'bold',
   }
-
 });
