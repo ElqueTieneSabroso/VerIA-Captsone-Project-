@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import axios from "axios";
 
-
 export default function LoginScreen( { navigation } ) {
     const [correo, setCorreo] = useState("");
     const [contrasena, setContrasena] = useState("");
