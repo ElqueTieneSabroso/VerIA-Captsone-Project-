@@ -102,6 +102,8 @@ export default function CameraScreen() {
     Haptics.selectionAsync().catch(() => {});
   }, []);
 
+
+  //con esto cancelamos, da valores falsos y cancela wasaaa
   const cancelCurrentAction = useCallback(() => {
     captureRunRef.current += 1;
     activeRequestRef.current?.abort();
@@ -127,6 +129,7 @@ export default function CameraScreen() {
     announce("Repitiendo descripcion.");
     Speech.speak(lastDescription, {
       language: "es-MX",
+      rate: 0.8,
       onError: () => {},
     });
   }, [announce, lastDescription, vibrate]);
