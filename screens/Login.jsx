@@ -23,13 +23,20 @@ const iniciarSesion = async () => {
       alert(respuesta.data.mensaje);
       navigation.navigate("Welcome");
 }
-  catch(error){
-    if(error.response){
-      alert(error.response.data.mensaje);
-    }else{
-          alert("No se pudo conectar con el servidor.");
-        }
+catch (error) {
+    console.log(error);
+    if (error.response) {
+        console.log("STATUS:", error.response.status);
+        console.log("DATA:", error.response.data);
+        Alert.alert("Error", error.response.data.mensaje);
+    } else if (error.request) {
+        console.log("REQUEST:", error.request);
+        Alert.alert("Error", "El servidor no respondió.");
+    } else {
+        console.log("MENSAJE:", error.message);
+        Alert.alert("Error", error.message);
     }
+}
 };
 return (
 <View style={styles.container}>

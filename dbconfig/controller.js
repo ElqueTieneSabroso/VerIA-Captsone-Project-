@@ -61,9 +61,13 @@ exports.login = async (req,res)=>{
             usuario:usuario[0]
         });
     }
-    catch(error){
-        res.status(500).json({
-            mensaje:"Error del servidor"
-        });
-    }
+    catch (error) {
+    console.error("=========== ERROR LOGIN ===========");
+    console.error(error);
+    console.error("===================================");
+    res.status(500).json({
+        mensaje: "Error del servidor"
+    });
+
+}
 };

@@ -10,7 +10,7 @@ export default function WelcomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
 
-      <Image source={require("../assets/icon.png")} style={styles.logo}/>
+      <Image source={require("../assets/LOGO_2.png")} style={styles.logo}/>
 
       <Text style={styles.title}>VERIA</Text>
 
