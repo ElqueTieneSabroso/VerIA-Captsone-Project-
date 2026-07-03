@@ -1,54 +1,81 @@
-import React from "react";
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-} from "react-native";
+  Alert,
+} from 'react-native';
+import axios from "axios";
 
 export default function LoginScreen({ navigation }) {
+  const [correo, setCorreo] = useState("");
+  const [contrasena, setContrasena] = useState("");
+
+  const iniciarSesion = async () => {
+    try {
+      const respuesta = await axios.post("http://192.168.1.126:3000/api/auth/login",
+        {
+          correo: correo,
+          contrasena: contrasena
+        }
+      );
+      alert(respuesta.data.mensaje);
+      navigation.navigate("CameraScreen");
+    }
+    catch (error) {
+      console.log(error);
+      if (error.response) {
+        console.log("STATUS:", error.response.status);
+        console.log("DATA:", error.response.data);
+        Alert.alert("Error", error.response.data.mensaje);
+      } else if (error.request) {
+        console.log("REQUEST:", error.request);
+        Alert.alert("Error", "El servidor no respondió.");
+      } else {
+        console.log("MENSAJE:", error.message);
+        Alert.alert("Error", error.message);
+      }
+    }
+  };
   return (
     <View style={styles.container}>
-      <Text style={styles.title} accessibilityRole="header">
-        VERIA
-      </Text>
-
+      <Text style={styles.title}>VERIA</Text>
       <TextInput
-        placeholder="correo"
+        placeholder="Correo electrónico"
+        value={correo}
+        onChangeText={setCorreo}
+        keyboardType="email-address"
+        autoCapitalize="none"
         style={styles.input}
         accessibilityLabel="Email"
         autoCapitalize="none"
         keyboardType="email-address"
       />
-
       <TextInput
-        placeholder="contrasena"
+        placeholder="Contraseña"
+        value={contrasena}
+        onChangeText={setContrasena}
         secureTextEntry
         style={styles.input}
         accessibilityLabel="Password"
       />
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate("Camera")}
-        accessibilityRole="button"
-        accessibilityLabel="Iniciar sesion"
-        accessibilityHint="Sign in and go to the camera screen"
-      >
-        <Text style={styles.buttonText}>Iniciar Sesion</Text>
+      <TouchableOpacity style={styles.button} onPress={iniciarSesion}>
+        <Text style={styles.buttonText}>Iniciar Sesión</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityLabel="Crear cuenta"
-        onPress={() => navigation.navigate("Register")}
-      >
-        <Text>Crear cuenta</Text>
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Register")}>
+        <Text style={styles.buttonText}>¿No tienes cuenta?</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("Welcome")}>
+        <Text style={styles.buttonText}>Regresar</Text>
       </TouchableOpacity>
     </View>
   );
-}
+};
+
 
 const styles = StyleSheet.create({
   container: {
@@ -70,16 +97,20 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   button: {
-    backgroundColor: "#007AFF",
+    backgroundColor: '#007AFF',
     padding: 15,
     borderRadius: 10,
-    marginBottom: 20,
-    minHeight: 48,
-    justifyContent: "center",
+    marginBottom: 15,
+  },
+  backButton: {
+    backgroundColor: '#666',
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 10,
   },
   buttonText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
-  },
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  }
 });

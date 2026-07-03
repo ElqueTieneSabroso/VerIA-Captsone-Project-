@@ -1,32 +1,111 @@
 import React from 'react';
+import { useState } from 'react';
+import axios from 'axios';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  alert,
 } from 'react-native';
-import AppNavigator from '../navigator/Application_nav';
+
+
 export default function RegisterScreen() {
+  const [nombre, setNombre] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [contrasena, setContrasena] = useState("");
+  const [confirmarContrasena, setConfirmarContrasena] = useState("");
+
+    const register = async () => {
+    if (!nombre.trim()) {
+        Alert.alert("Error", "Ingrese su nombre.");
+        return;
+    }
+    if (!correo.trim()) {
+        Alert.alert("Error", "Ingrese su correo electrónico.");
+        return;
+    }
+    if (!contrasena.trim()) {
+        Alert.alert("Error", "Ingrese una contraseña.");
+        return;
+    }
+    if (!confirmarContrasena.trim()) {
+        Alert.alert("Error", "Confirme su contraseña.");
+        return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(correo)) {
+        Alert.alert("Error", "Correo electrónico inválido.");
+        return;
+    }
+    const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#_-])[A-Za-z\d@$!%*?&.#_-]{8,}$/;
+    if (!passwordRegex.test(contrasena)) {
+        Alert.alert(
+            "Contraseña insegura",
+            "Debe contener al menos:\n\n• 8 caracteres\n• Una mayúscula\n• Una minúscula\n• Un número\n• Un carácter especial."
+        );
+        return;
+    }
+    if (contrasena !== confirmarContrasena) {
+        Alert.alert("Error", "Las contraseñas no coinciden.");
+        return;
+    }
+    try {
+        const respuesta = await axios.post(
+            "http://192.168.1.18:3000/api/auth/register",
+            {nombre,correo,contrasena}
+        );
+        Alert.alert(
+            "Registro exitoso",
+            respuesta.data.mensaje
+        );
+        navigation.replace("Login");
+    } catch (error) {
+        if (error.response) {
+            Alert.alert(
+                "Error",
+                error.response.data.mensaje
+            );
+        } else {
+            console.log(error);
+            Alert.alert(
+                "Error",
+                "No se pudo conectar con el servidor."
+            );
+        }
+    }
+};
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Registro</Text>
-
       <TextInput
         placeholder="Nombre"
-        style={styles.input}
-      />
+        value={nombre}
+        onChangeText={setNombre}
+        />
 
       <TextInput
         placeholder="Correo"
-        style={styles.input}
-      />
+        value={correo}
+        onChangeText={setCorreo}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        />
 
       <TextInput
         placeholder="Contraseña"
+        value={contrasena}
+        onChangeText={setContrasena}
         secureTextEntry
-        style={styles.input}
-      />
+        />
+
+      <TextInput
+        placeholder="Confirmar contraseña"
+        value={confirmarContrasena}
+        onChangeText={setConfirmarContrasena}
+        secureTextEntry
+        />
 
       <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>Registrarse</Text>

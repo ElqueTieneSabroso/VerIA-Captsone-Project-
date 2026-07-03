@@ -1,7 +1,11 @@
 const db = require("../dbconfig/db");
 const bcrypt = require("bcrypt");
 const { validationResult } = require("express-validator");
+
 exports.register = async (req,res)=>{
+
+    console.log("REGISTER RECIBIDO");
+    console.log(req.body);
     const errors = validationResult(req);
     if(!errors.isEmpty()){return res.status(400).json(errors.array());}
 
@@ -24,8 +28,10 @@ exports.register = async (req,res)=>{
         res.status(500).json({mensaje:"Error del servidor"});
     }
 };
-
-exports.login = async (req,res)=>{ const {correo,contrasena} = req.body;
+exports.login = async (req,res)=>{ 
+    console.log("LOGIN RECIBIDO");
+    console.log(req.body);
+    const {correo,contrasena} = req.body;
     if(!correo || !contrasena){
         return res.status(400).json({
             mensaje:"Todos los campos son obligatorios"
@@ -55,9 +61,13 @@ exports.login = async (req,res)=>{ const {correo,contrasena} = req.body;
             usuario:usuario[0]
         });
     }
-    catch(error){
-        res.status(500).json({
-            mensaje:"Error del servidor"
-        });
-    }
+    catch (error) {
+    console.error("=========== ERROR LOGIN ===========");
+    console.error(error);
+    console.error("===================================");
+    res.status(500).json({
+        mensaje: "Error del servidor"
+    });
+
+}
 };
