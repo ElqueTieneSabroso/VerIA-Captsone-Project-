@@ -54,7 +54,7 @@ export default function RegisterScreen() {
     }
     try {
         const respuesta = await axios.post(
-            "http://192.168.1.18:3000/api/auth/register",
+            "http://192.168.1.12:3000/api/auth/register",
             {nombre,correo,contrasena}
         );
         Alert.alert(
@@ -63,18 +63,18 @@ export default function RegisterScreen() {
         );
         navigation.replace("Login");
     } catch (error) {
-        if (error.response) {
-            Alert.alert(
-                "Error",
-                error.response.data.mensaje
-            );
-        } else {
-            console.log(error);
-            Alert.alert(
-                "Error",
-                "No se pudo conectar con el servidor."
-            );
-        }
+
+    console.log("=========== ERROR LOGIN ===========");
+    console.log(error);
+    console.log("CODE:", error.code);
+    console.log("MESSAGE:", error.message);
+    console.log("SQL:", error.sql);
+    console.log("SQL MESSAGE:", error.sqlMessage);
+    console.log("STACK:", error.stack);
+    console.log("==================================");
+
+
+
     }
 };
   return (
@@ -107,9 +107,14 @@ export default function RegisterScreen() {
         secureTextEntry
         />
 
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>Registrarse</Text>
-      </TouchableOpacity>
+      <TouchableOpacity
+    style={styles.button}
+    onPress={register}
+>
+    <Text style={styles.buttonText}>
+        Registrarse
+    </Text>
+</TouchableOpacity>
     </View>
   );
 }

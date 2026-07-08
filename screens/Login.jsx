@@ -14,7 +14,7 @@ export default function LoginScreen( { navigation } ) {
     const [contrasena, setContrasena] = useState("");
 
 const iniciarSesion = async () => {
-  try {const respuesta = await axios.post("http://192.168.1.18:3000/api/auth/login",
+  try {const respuesta = await axios.post("http://192.168.1.12:3000/api/auth/login",
     {
       correo: correo,
       contrasena: contrasena

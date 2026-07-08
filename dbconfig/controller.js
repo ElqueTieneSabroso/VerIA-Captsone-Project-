@@ -1,7 +1,7 @@
 const db = require("../dbconfig/db");
 const bcrypt = require("bcrypt");
 const { validationResult } = require("express-validator");
-
+/*
 exports.register = async (req,res)=>{
 
     console.log("REGISTER RECIBIDO");
@@ -23,11 +23,22 @@ exports.register = async (req,res)=>{
         );
         res.status(201).json({mensaje:"Usuario registrado"});
     }
-    catch(error){
-        console.log(error);
-        res.status(500).json({mensaje:"Error del servidor"});
-    }
+catch (error) {
+    console.log("=========== ERROR LOGIN ===========");
+    console.log(error);
+    console.log("CODE:", error.code);
+    console.log("MESSAGE:", error.message);
+    console.log("SQL:", error.sql);
+    console.log("SQL MESSAGE:", error.sqlMessage);
+    console.log("STACK:", error.stack);
+    console.log("==================================");
+
+    res.status(500).json({
+        mensaje: "Error del servidor"
+    });
+}
 };
+*/
 exports.login = async (req,res)=>{ 
     console.log("LOGIN RECIBIDO");
     console.log(req.body);
@@ -61,13 +72,67 @@ exports.login = async (req,res)=>{
             usuario:usuario[0]
         });
     }
-    catch (error) {
-    console.error("=========== ERROR LOGIN ===========");
-    console.error(error);
-    console.error("===================================");
+catch (error) {
+    console.log("=========== ERROR LOGIN ===========");
+    console.log(error);
+    console.log("CODE:", error.code);
+    console.log("MESSAGE:", error.message);
+    console.log("SQL:", error.sql);
+    console.log("SQL MESSAGE:", error.sqlMessage);
+    console.log("STACK:", error.stack);
+    console.log("==================================");
+
     res.status(500).json({
         mensaje: "Error del servidor"
     });
-
 }
+};
+exports.register = async (req, res) => {
+
+    console.log("REGISTER RECIBIDO");
+    console.log(req.body);
+
+    const { nombre, correo, contrasena } = req.body;
+
+    if (!nombre || !correo || !contrasena) {
+        return res.status(400).json({
+            mensaje: "Todos los campos son obligatorios"
+        });
+    }
+
+    try {
+
+        const [usuario] = await db.query(
+            "SELECT * FROM Usuarios WHERE Correo = ?",
+            [correo]
+        );
+
+        if (usuario.length > 0) {
+            return res.status(409).json({
+                mensaje: "Ese correo ya está registrado."
+            });
+        }
+
+        const hash = await bcrypt.hash(contrasena, 10);
+
+        await db.query(
+            `INSERT INTO Usuarios
+            (Nombre, Correo, Contrasena)
+            VALUES (?, ?, ?)`,
+            [nombre, correo, hash]
+        );
+
+        res.status(201).json({
+            mensaje: "Usuario registrado correctamente."
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            mensaje: "Error del servidor."
+        });
+
+    }
 };
