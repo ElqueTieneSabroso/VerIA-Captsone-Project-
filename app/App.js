@@ -1,15 +1,14 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
 import React from 'react';
-import AppNavigator from '../navigator/Application_nav';
-import LoginScreen from '../screens/Login';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-const navigation = AppNavigator(navigation);
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import AppNavigator from "../navigator/Application_nav";
 
 export default function App() {
-  return <AppNavigator /> ;
-
-
+  return (
+    <SafeAreaProvider>
+      <AppNavigator />
+    </SafeAreaProvider>
+  );
 }

@@ -21,7 +21,7 @@ const iniciarSesion = async () => {
     }
   );
       alert(respuesta.data.mensaje);
-      navigation.navigate("CameraScreen");
+      navigation.replace("CameraScreen");
     }
     catch (error) {
       console.log(error);
@@ -60,8 +60,9 @@ const iniciarSesion = async () => {
         style={styles.input}
         accessibilityLabel="Password"
       />
-      <TouchableOpacity style={styles.button} onPress={iniciarSesion}>
+      <TouchableOpacity style={styles.button} onPress={iniciarSesion} onPress={() => navigation.navigate("Camera")}>
         <Text style={styles.buttonText}>Iniciar Sesión</Text>
+        
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Register")}>

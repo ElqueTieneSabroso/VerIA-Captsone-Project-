@@ -1,44 +1,7 @@
 const db = require("../dbconfig/db");
 const bcrypt = require("bcrypt");
 const { validationResult } = require("express-validator");
-/*
-exports.register = async (req,res)=>{
 
-    console.log("REGISTER RECIBIDO");
-    console.log(req.body);
-    const errors = validationResult(req);
-    if(!errors.isEmpty()){return res.status(400).json(errors.array());}
-
-    const {nombre,correo,contrasena} = req.body;
-    try{
-        const [usuario] = await db.query("SELECT * FROM Usuarios WHERE Correo=?",[correo]);
-        if(usuario.length>0){return res.status(409).json({mensaje:"Ese correo ya existe"});
-        }
-        const hash = await bcrypt.hash(contrasena,10);
-        await db.query(
-            `INSERT INTO Usuarios
-            (Nombre,Correo,Contrasena)
-            VALUES(?,?,?)`,
-            [nombre,correo,hash]
-        );
-        res.status(201).json({mensaje:"Usuario registrado"});
-    }
-catch (error) {
-    console.log("=========== ERROR LOGIN ===========");
-    console.log(error);
-    console.log("CODE:", error.code);
-    console.log("MESSAGE:", error.message);
-    console.log("SQL:", error.sql);
-    console.log("SQL MESSAGE:", error.sqlMessage);
-    console.log("STACK:", error.stack);
-    console.log("==================================");
-
-    res.status(500).json({
-        mensaje: "Error del servidor"
-    });
-}
-};
-*/
 exports.login = async (req,res)=>{ 
     console.log("LOGIN RECIBIDO");
     console.log(req.body);
