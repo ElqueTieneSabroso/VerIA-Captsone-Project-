@@ -9,9 +9,9 @@ import {
 } from 'react-native';
 import axios from "axios";
 
-export default function LoginScreen( { navigation } ) {
-    const [correo, setCorreo] = useState("");
-    const [contrasena, setContrasena] = useState("");
+export default function LoginScreen({ navigation }) {
+  const [correo, setCorreo] = useState("");
+  const [contrasena, setContrasena] = useState("");
 
 const iniciarSesion = async () => {
   try {const respuesta = await axios.post("http://192.168.1.12:3000/api/auth/login",
@@ -21,25 +21,25 @@ const iniciarSesion = async () => {
     }
   );
       alert(respuesta.data.mensaje);
-      navigation.navigate("Welcome");
-}
-catch (error) {
-    console.log(error);
-    if (error.response) {
+      navigation.navigate("CameraScreen");
+    }
+    catch (error) {
+      console.log(error);
+      if (error.response) {
         console.log("STATUS:", error.response.status);
         console.log("DATA:", error.response.data);
         Alert.alert("Error", error.response.data.mensaje);
-    } else if (error.request) {
+      } else if (error.request) {
         console.log("REQUEST:", error.request);
         Alert.alert("Error", "El servidor no respondió.");
-    } else {
+      } else {
         console.log("MENSAJE:", error.message);
         Alert.alert("Error", error.message);
+      }
     }
-}
-};
-return (
-<View style={styles.container}>
+  };
+  return (
+    <View style={styles.container}>
       <Text style={styles.title}>VERIA</Text>
       <TextInput
         placeholder="Correo electrónico"
@@ -48,6 +48,9 @@ return (
         keyboardType="email-address"
         autoCapitalize="none"
         style={styles.input}
+        accessibilityLabel="Email"
+        autoCapitalize="none"
+        keyboardType="email-address"
       />
       <TextInput
         placeholder="Contraseña"
@@ -55,6 +58,7 @@ return (
         onChangeText={setContrasena}
         secureTextEntry
         style={styles.input}
+        accessibilityLabel="Password"
       />
       <TouchableOpacity style={styles.button} onPress={iniciarSesion}>
         <Text style={styles.buttonText}>Iniciar Sesión</Text>
@@ -69,43 +73,43 @@ return (
       </TouchableOpacity>
     </View>
   );
-  };
-
+};
 
 
 const styles = StyleSheet.create({
-  container:{
-    flex:1,
-    justifyContent:'center',
-    padding:20,
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 20,
   },
-  title:{
-    fontSize:32,
-    fontWeight:'bold',
-    textAlign:'center',
-    marginBottom:40,
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 40,
   },
-  input:{
-    borderWidth:1,
-    borderRadius:10,
-    padding:12,
-    marginBottom:15,
+  input: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 15,
+    minHeight: 48,
   },
-  button:{
-    backgroundColor:'#007AFF',
-    padding:15,
-    borderRadius:10,
-    marginBottom:15,
+  button: {
+    backgroundColor: '#007AFF',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
   },
-  backButton:{
-    backgroundColor:'#666',
-    padding:15,
-    borderRadius:10,
-    marginTop:10,
+  backButton: {
+    backgroundColor: '#666',
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 10,
   },
-  buttonText:{
-    color:'white',
-    textAlign:'center',
-    fontWeight:'bold',
+  buttonText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
   }
 });
