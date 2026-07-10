@@ -102,7 +102,6 @@ export default function CameraScreen() {
     Haptics.selectionAsync().catch(() => {});
   }, []);
 
-
   //con esto cancelamos, da valores falsos y cancela wasaaa
   const cancelCurrentAction = useCallback(() => {
     captureRunRef.current += 1;

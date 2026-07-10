@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,24 +6,25 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-} from 'react-native';
+} from "react-native";
 import axios from "axios";
 
 export default function LoginScreen({ navigation }) {
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
 
-const iniciarSesion = async () => {
-  try {const respuesta = await axios.post("http://192.168.1.12:3000/api/auth/login",
-    {
-      correo: correo,
-      contrasena: contrasena
-    }
-  );
+  const iniciarSesion = async () => {
+    try {
+      const respuesta = await axios.post(
+        "http://192.168.1.12:3000/api/auth/login",
+        {
+          correo: correo,
+          contrasena: contrasena,
+        },
+      );
       alert(respuesta.data.mensaje);
       navigation.replace("CameraScreen");
-    }
-    catch (error) {
+    } catch (error) {
       console.log(error);
       if (error.response) {
         console.log("STATUS:", error.response.status);
@@ -60,22 +61,30 @@ const iniciarSesion = async () => {
         style={styles.input}
         accessibilityLabel="Password"
       />
-      <TouchableOpacity style={styles.button} onPress={iniciarSesion} onPress={() => navigation.navigate("Camera")}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={iniciarSesion}
+        onPress={() => navigation.navigate("Camera")}
+      >
         <Text style={styles.buttonText}>Iniciar Sesión</Text>
-        
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Register")}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate("Register")}
+      >
         <Text style={styles.buttonText}>¿No tienes cuenta?</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("Welcome")}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.navigate("Welcome")}
+      >
         <Text style={styles.buttonText}>Regresar</Text>
       </TouchableOpacity>
     </View>
   );
-};
-
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -97,20 +106,20 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     padding: 15,
     borderRadius: 10,
     marginBottom: 15,
   },
   backButton: {
-    backgroundColor: '#666',
+    backgroundColor: "#666",
     padding: 15,
     borderRadius: 10,
     marginTop: 10,
   },
   buttonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  }
+    color: "white",
+    textAlign: "center",
+    fontWeight: "bold",
+  },
 });
