@@ -14,14 +14,31 @@ export default function LoginScreen({ navigation }) {
   const [contrasena, setContrasena] = useState("");
 
 const iniciarSesion = async () => {
-  try {const respuesta = await axios.post("http://192.168.1.12:3000/api/auth/login",
+    if (!correo.trim() || !contrasena.trim()) {
+    Alert.alert(
+        "Campos incompletos",
+        "Ingrese su correo y contraseña."
+    );
+    return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(correo)) {
+    Alert.alert(
+        "Correo inválido",
+        "Ingrese un correo válido."
+    );
+    return;
+}
+}
+  try {const respuesta = await axios.post("http://192.168.1.10:3000/api/auth/login",
     {
       correo: correo,
       contrasena: contrasena
+      
     }
+    
   );
-      alert(respuesta.data.mensaje);
-      navigation.replace("CameraScreen");
+    alert(respuesta.data.mensaje);
+    navigation.replace("Camera");
     }
     catch (error) {
       console.log(error);
@@ -36,6 +53,7 @@ const iniciarSesion = async () => {
         console.log("MENSAJE:", error.message);
         Alert.alert("Error", error.message);
       }
+       
     }
   };
   return (
@@ -60,10 +78,14 @@ const iniciarSesion = async () => {
         style={styles.input}
         accessibilityLabel="Password"
       />
-      <TouchableOpacity style={styles.button} onPress={iniciarSesion} onPress={() => navigation.navigate("Camera")}>
-        <Text style={styles.buttonText}>Iniciar Sesión</Text>
-        
-      </TouchableOpacity>
+      <TouchableOpacity
+    style={styles.button}
+    onPress={iniciarSesion}
+>
+    <Text style={styles.buttonText}>
+        Iniciar Sesión
+    </Text>
+</TouchableOpacity>
 
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Register")}>
         <Text style={styles.buttonText}>¿No tienes cuenta?</Text>

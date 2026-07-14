@@ -1,4 +1,3 @@
-require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const authRoutes = require("./auth");
@@ -18,6 +17,7 @@ app.listen(process.env.PORT, () => {
     console.log("Servidor iniciado");
 });
 */
+
 app.listen(3000, "0.0.0.0", () => {
     console.log("Servidor iniciado en http://0.0.0.0:3000");
 });
