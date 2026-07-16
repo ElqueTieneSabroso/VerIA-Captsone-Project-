@@ -32,7 +32,7 @@ export default function LoginScreen({ navigation }) {
         }
         try {
             const respuesta = await axios.post(
-                "http://192.168.1.10:3000/api/auth/login",
+                "http://192.168.1.10:3001/api/auth/login",
                 {
                     correo,
                     contrasena
