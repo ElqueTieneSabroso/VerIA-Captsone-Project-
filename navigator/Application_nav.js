@@ -7,6 +7,10 @@ import LoginScreen from '../screens/Login';
 import RegisterScreen from '../screens/SignIn';
 import WelcomeScreen from '../screens/Welcome';
 import CameraScreen from '../screens/CameraScreen';
+import Settings from "../screens/Settings";
+import Accessibility from "../screens/Accessibility";
+import Interface from "../screens/Interface";
+import Feedback from "../screens/feedback";
 
 const Stack = createNativeStackNavigator();
 
@@ -31,6 +35,21 @@ export default function AppNavigator() {
             name="Camera"
             component={CameraScreen}
           />
+          <Stack.Screen 
+          name="Settings" 
+          component={Settings} />
+
+          <Stack.Screen 
+          name="Accessibility" 
+          component={Accessibility} />
+          
+          <Stack.Screen 
+          name="Interface" 
+          component={Interface} />
+          
+          <Stack.Screen 
+          name="Feedback" 
+          component={Feedback} />
         </Stack.Navigator>
       </NavigationContainer>
   );

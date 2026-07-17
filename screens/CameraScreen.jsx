@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   View,
+  TouchableOpacity,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
@@ -49,7 +50,7 @@ function pickPictureSize(sizes) {
   ).size;
 }
 
-export default function CameraScreen() {
+export default function CameraScreen( {navigation}) {
   const cameraRef = useRef(null);
   const activeRequestRef = useRef(null);
   const captureRunRef = useRef(0);
@@ -343,6 +344,12 @@ export default function CameraScreen() {
       >
         <View style={styles.captureButtonInner} />
       </Pressable>
+      <TouchableOpacity
+      style={styles.settingsButton}
+      onPress={() => navigation.navigate("Settings")}
+      >
+        <Text style={styles.settingsIcon}>⚙</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -443,4 +450,26 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: "center",
   },
+  settingsButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#1E88E5",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 6, // Android
+    shadowColor: "#000", // iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    zIndex: 100,
+},
+
+settingsIcon: {
+    fontSize: 28,
+    color: "#FFF",
+},
 });
