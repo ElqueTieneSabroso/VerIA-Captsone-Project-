@@ -1,0 +1,39 @@
+appId: host.exp.exponent
+name: Validaciones del registro de usuario
+tags:
+  - smoke
+  - validation
+---
+- openLink: ${APP_URL}
+- extendedWaitUntil:
+    visible:
+      id: login-screen
+    timeout: 20000
+- tapOn:
+    id: login-register-link
+- assertVisible:
+    id: register-screen
+- tapOn:
+    id: register-submit-button
+- assertVisible: Campos incompletos
+- assertVisible: Complete todos los campos.
+- tapOn: OK
+- tapOn:
+    id: register-name-input
+- inputText: Usuario Maestro
+- tapOn:
+    id: register-email-input
+- inputText: correo-invalido
+- tapOn:
+    id: register-password-input
+- inputText: Veria_123!
+- tapOn:
+    id: register-confirm-password-input
+- inputText: Veria_123!
+- hideKeyboard
+- tapOn:
+    id: register-submit-button
+- assertVisible: Correo inválido
+- tapOn: OK
+- assertVisible:
+    id: register-login-link

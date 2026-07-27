@@ -1,101 +1,122 @@
-const db = require("../dbconfig/db");
+const db = require("./db");
 const bcrypt = require("bcrypt");
-const { validationResult } = require("express-validator");
 
-exports.login = async (req,res)=>{ 
-    console.log("LOGIN RECIBIDO");
-    console.log(req.body);
-    const {correo,contrasena} = req.body;
-    if(!correo || !contrasena){
-        return res.status(400).json({
-            mensaje:"Todos los campos son obligatorios"
-        });
-    }
-    try{
-        const [usuario] = await db.query(
-            "SELECT * FROM Usuarios WHERE Correo=?",
-            [correo]
-        );
-        if(usuario.length==0){
-            return res.status(404).json({
-                mensaje:"Usuario no encontrado"
-            });
-        }
-        const valido = await bcrypt.compare(
-            contrasena,
-            usuario[0].Contrasena
-        );
-        if(!valido){
-            return res.status(401).json({
-                mensaje:"Contraseña incorrecta"
-            });
-        }
-        res.json({
-            mensaje:"Inicio de sesión correcto",
-            usuario:usuario[0]
-        });
-    }
-catch (error) {
-    console.log("=========== ERROR LOGIN ===========");
-    console.log(error);
-    console.log("CODE:", error.code);
-    console.log("MESSAGE:", error.message);
-    console.log("SQL:", error.sql);
-    console.log("SQL MESSAGE:", error.sqlMessage);
-    console.log("STACK:", error.stack);
-    console.log("==================================");
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const STRONG_PASSWORD_PATTERN =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#_-])[A-Za-z\d@$!%*?&.#_-]{8,}$/;
 
-    res.status(500).json({
-        mensaje: "Error del servidor"
-    });
+function publicUser(user) {
+  if (!user || typeof user !== "object") {
+    return null;
+  }
+
+  const { Contrasena, contrasena, Password, password, ...safeUser } = user;
+  return safeUser;
 }
-};
-exports.register = async (req, res) => {
 
-    console.log("REGISTER RECIBIDO");
-    console.log(req.body);
+function createAuthController({
+  database = db,
+  passwordService = bcrypt,
+  logger = console,
+} = {}) {
+  async function login(req, res) {
+    const correo = req.body?.correo?.trim();
+    const contrasena = req.body?.contrasena;
 
-    const { nombre, correo, contrasena } = req.body;
+    if (!correo || !contrasena) {
+      return res.status(400).json({
+        mensaje: "Todos los campos son obligatorios",
+      });
+    }
 
-    if (!nombre || !correo || !contrasena) {
-        return res.status(400).json({
-            mensaje: "Todos los campos son obligatorios"
-        });
+    if (!EMAIL_PATTERN.test(correo)) {
+      return res.status(400).json({ mensaje: "Correo invalido" });
     }
 
     try {
+      const [usuarios] = await database.query(
+        "SELECT * FROM Usuarios WHERE Correo=?",
+        [correo],
+      );
 
-        const [usuario] = await db.query(
-            "SELECT * FROM Usuarios WHERE Correo = ?",
-            [correo]
-        );
+      if (usuarios.length === 0) {
+        return res.status(404).json({ mensaje: "Usuario no encontrado" });
+      }
 
-        if (usuario.length > 0) {
-            return res.status(409).json({
-                mensaje: "Ese correo ya está registrado."
-            });
-        }
+      const valido = await passwordService.compare(
+        contrasena,
+        usuarios[0].Contrasena,
+      );
 
-        const hash = await bcrypt.hash(contrasena, 10);
+      if (!valido) {
+        return res.status(401).json({ mensaje: "Contrasena incorrecta" });
+      }
 
-        await db.query(
-            `INSERT INTO Usuarios
-            (Nombre, Correo, Contrasena)
-            VALUES (?, ?, ?)`,
-            [nombre, correo, hash]
-        );
-
-        res.status(201).json({
-            mensaje: "Usuario registrado correctamente."
-        });
-
+      return res.json({
+        mensaje: "Inicio de sesion correcto",
+        usuario: publicUser(usuarios[0]),
+      });
     } catch (error) {
-
-        console.log(error);
-
-        res.status(500).json({
-            mensaje: "Error del servidor."
-        });
-
+      logger.error("Error de base de datos durante login:", error.message);
+      return res.status(500).json({ mensaje: "Error del servidor" });
     }
+  }
+
+  async function register(req, res) {
+    const nombre = req.body?.nombre?.trim();
+    const correo = req.body?.correo?.trim();
+    const contrasena = req.body?.contrasena;
+
+    if (!nombre || !correo || !contrasena) {
+      return res.status(400).json({
+        mensaje: "Todos los campos son obligatorios",
+      });
+    }
+
+    if (!EMAIL_PATTERN.test(correo)) {
+      return res.status(400).json({ mensaje: "Correo invalido" });
+    }
+
+    if (!STRONG_PASSWORD_PATTERN.test(contrasena)) {
+      return res.status(400).json({ mensaje: "Contrasena insegura" });
+    }
+
+    try {
+      const [usuarios] = await database.query(
+        "SELECT * FROM Usuarios WHERE Correo = ?",
+        [correo],
+      );
+
+      if (usuarios.length > 0) {
+        return res.status(409).json({
+          mensaje: "Ese correo ya esta registrado.",
+        });
+      }
+
+      const hash = await passwordService.hash(contrasena, 10);
+      await database.query(
+        `INSERT INTO Usuarios
+        (Nombre, Correo, Contrasena)
+        VALUES (?, ?, ?)`,
+        [nombre, correo, hash],
+      );
+
+      return res.status(201).json({
+        mensaje: "Usuario registrado correctamente.",
+      });
+    } catch (error) {
+      logger.error("Error de base de datos durante registro:", error.message);
+      return res.status(500).json({ mensaje: "Error del servidor." });
+    }
+  }
+
+  return { login, register };
+}
+
+const controller = createAuthController();
+
+module.exports = {
+  ...controller,
+  createAuthController,
+  publicUser,
 };

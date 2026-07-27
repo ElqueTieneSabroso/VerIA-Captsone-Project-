@@ -1,49 +1,38 @@
-import React from "react";
-import { useState } from "react";
-import axios from "axios";
+import React, { useState } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  alert,
+  Alert,
 } from "react-native";
+import { register } from "../services/auth";
+import { isStrongPassword, isValidEmail } from "../utils/validation";
 
-export default function RegisterScreen() {
+export default function RegisterScreen({ navigation }) {
   const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [confirmarContrasena, setConfirmarContrasena] = useState("");
-
-  const register = async () => {
-    if (!nombre.trim()) {
-      Alert.alert("Error", "Ingrese su nombre.");
+  const registrar = async () => {
+    if (
+      !nombre.trim() ||
+      !correo.trim() ||
+      !contrasena.trim() ||
+      !confirmarContrasena.trim()
+    ) {
+      Alert.alert("Campos incompletos", "Complete todos los campos.");
       return;
     }
-    if (!correo.trim()) {
-      Alert.alert("Error", "Ingrese su correo electrónico.");
+    if (!isValidEmail(correo)) {
+      Alert.alert("Correo inválido", "Ingrese un correo electrónico válido.");
       return;
     }
-    if (!contrasena.trim()) {
-      Alert.alert("Error", "Ingrese una contraseña.");
-      return;
-    }
-    if (!confirmarContrasena.trim()) {
-      Alert.alert("Error", "Confirme su contraseña.");
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(correo)) {
-      Alert.alert("Error", "Correo electrónico inválido.");
-      return;
-    }
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#_-])[A-Za-z\d@$!%*?&.#_-]{8,}$/;
-    if (!passwordRegex.test(contrasena)) {
+    if (!isStrongPassword(contrasena)) {
       Alert.alert(
         "Contraseña insegura",
-        "Debe contener al menos:\n\n• 8 caracteres\n• Una mayúscula\n• Una minúscula\n• Un número\n• Un carácter especial.",
+        "La contraseña debe contener:\n\n• 8 caracteres mínimo\n• Una mayúscula\n• Una minúscula\n• Un número\n• Un carácter especial.",
       );
       return;
     }
@@ -52,51 +41,80 @@ export default function RegisterScreen() {
       return;
     }
     try {
-      const respuesta = await axios.post(
-        "http://192.168.1.12:3000/api/auth/register",
-        { nombre, correo, contrasena },
-      );
-      Alert.alert("Registro exitoso", respuesta.data.mensaje);
+      const respuesta = await register({ nombre, correo, contrasena });
+      Alert.alert("Registro exitoso", respuesta.mensaje);
       navigation.replace("Login");
     } catch (error) {
-      console.log("=========== ERROR LOGIN ===========");
-      console.log(error);
-      console.log("CODE:", error.code);
-      console.log("MESSAGE:", error.message);
-      console.log("SQL:", error.sql);
-      console.log("SQL MESSAGE:", error.sqlMessage);
-      console.log("STACK:", error.stack);
-      console.log("==================================");
+      Alert.alert("Error", error.message || "No se pudo registrar.");
     }
   };
   return (
-    <View style={styles.container}>
-      <TextInput placeholder="Nombre" value={nombre} onChangeText={setNombre} />
-
+    <View style={styles.container} testID="register-screen">
+      <Text style={styles.title}>VerIA</Text>
       <TextInput
-        placeholder="Correo"
+        placeholder="Name"
+        placeholderTextColor="#E8E8E8"
+        value={nombre}
+        onChangeText={setNombre}
+        style={styles.input}
+        testID="register-name-input"
+        accessibilityLabel="Nombre"
+      />
+      <TextInput
+        placeholder="E-mail"
+        placeholderTextColor="#E8E8E8"
         value={correo}
         onChangeText={setCorreo}
         keyboardType="email-address"
         autoCapitalize="none"
+        style={styles.input}
+        testID="register-email-input"
+        accessibilityLabel="Correo electrónico"
       />
-
       <TextInput
-        placeholder="Contraseña"
+        placeholder="Password"
+        placeholderTextColor="#E8E8E8"
         value={contrasena}
         onChangeText={setContrasena}
         secureTextEntry
+        style={styles.input}
+        testID="register-password-input"
+        accessibilityLabel="Contraseña"
       />
-
       <TextInput
-        placeholder="Confirmar contraseña"
+        placeholder="Confirm Password"
+        placeholderTextColor="#E8E8E8"
         value={confirmarContrasena}
         onChangeText={setConfirmarContrasena}
         secureTextEntry
+        style={styles.input}
+        testID="register-confirm-password-input"
+        accessibilityLabel="Confirmar contraseña"
       />
-
-      <TouchableOpacity style={styles.button} onPress={register}>
-        <Text style={styles.buttonText}>Registrarse</Text>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={registrar}
+        testID="register-submit-button"
+        accessibilityRole="button"
+        accessibilityLabel="Registrar cuenta"
+      >
+        <Text style={styles.buttonText}>Sign Up</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => navigation.navigate("Login")}
+        testID="register-login-link"
+        accessibilityRole="button"
+        accessibilityLabel="Ir a iniciar sesión"
+      >
+        <Text style={styles.registerText}>Already have an account?</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => navigation.navigate("Welcome")}
+        testID="register-back-link"
+        accessibilityRole="button"
+        accessibilityLabel="Volver a bienvenida"
+      >
+        <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
     </View>
   );
@@ -105,28 +123,69 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#171717",
     justifyContent: "center",
-    padding: 20,
+    alignItems: "center",
+    paddingHorizontal: 25,
   },
   title: {
-    fontSize: 28,
-    marginBottom: 30,
-    textAlign: "center",
+    color: "white",
+    fontSize: 68,
+    fontWeight: "900",
+    marginBottom: 60,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 15,
+    width: "85%",
+    height: 55,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: "#36AFFF",
+    color: "white",
+    fontSize: 20,
+    paddingHorizontal: 20,
+    marginBottom: 18,
+    backgroundColor: "#171717",
+    shadowColor: "#2FA8FF",
+    shadowOpacity: 0.9,
+    shadowRadius: 18,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 14,
   },
   button: {
-    backgroundColor: "#007AFF",
-    padding: 15,
-    borderRadius: 10,
+    width: "85%",
+    height: 58,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 30,
+    backgroundColor: "#58B6FF",
+    borderWidth: 2,
+    borderColor: "#D8F1FF",
+    marginTop: 25,
+    shadowColor: "#2FA8FF",
+    shadowOpacity: 1,
+    shadowRadius: 22,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 18,
   },
   buttonText: {
-    textAlign: "center",
     color: "white",
-    fontWeight: "bold",
+    fontSize: 22,
+    fontWeight: "600",
+  },
+  registerText: {
+    color: "#DDDDDD",
+    fontSize: 17,
+    marginTop: 25,
+  },
+  backText: {
+    color: "#9A9A9A",
+    fontSize: 17,
+    marginTop: 15,
   },
 });

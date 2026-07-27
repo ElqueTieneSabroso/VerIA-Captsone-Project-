@@ -7,7 +7,15 @@ node_modules/
 .expo/
 dist/
 web-build/
+.quality-build/
+.quality-build-audio/
+.quality-test-evidence/
+.docx-qa/
 expo-env.d.ts
+
+# local quality tooling and reports
+.tools/
+coverage/
 
 # Native
 .kotlin/
@@ -31,6 +39,10 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
+.env.*
+!.env.example
+dbconfig/.env
 .env*.local
 
 # typescript
@@ -42,4 +54,3 @@ yarn-error.*
 
 # ngrok binary
 ngrok-bin/
-

@@ -1,0 +1,65 @@
+appId: host.exp.exponent
+name: Navegación autenticada y opciones de accesibilidad
+tags:
+  - authenticated
+  - navigation
+---
+- setPermissions:
+    appId: host.exp.exponent
+    permissions:
+      camera: allow
+      microphone: allow
+- openLink: ${APP_URL}
+- extendedWaitUntil:
+    visible:
+      id: login-screen
+    timeout: 20000
+- tapOn:
+    id: login-email-input
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: login-password-input
+- inputText: ${E2E_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: login-submit-button
+- extendedWaitUntil:
+    visible: Bienvenido
+    timeout: 15000
+- tapOn: OK
+- extendedWaitUntil:
+    visible:
+      id: camera-screen
+    timeout: 20000
+- assertVisible:
+    id: camera-capture-button
+- assertVisible:
+    id: camera-voice-button
+- tapOn:
+    id: camera-settings-button
+- assertVisible:
+    id: settings-screen
+- tapOn:
+    id: settings-accessibility-button
+- assertVisible:
+    id: accessibility-screen
+- assertVisible:
+    id: accessibility-talkback-switch
+- tapOn:
+    id: accessibility-talkback-switch
+- back
+- tapOn:
+    id: settings-interface-button
+- assertVisible:
+    id: interface-screen
+- tapOn:
+    id: interface-size-large-button
+- tapOn:
+    id: interface-minimal-switch
+- back
+- tapOn:
+    id: settings-feedback-button
+- assertVisible:
+    id: feedback-screen
+- tapOn:
+    id: feedback-vibration-switch

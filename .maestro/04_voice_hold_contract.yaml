@@ -1,0 +1,39 @@
+appId: host.exp.exponent
+name: Contrato de pulsación sostenida para la instrucción de voz
+tags:
+  - authenticated
+  - voice
+  - system
+---
+- setPermissions:
+    appId: host.exp.exponent
+    permissions:
+      camera: allow
+      microphone: allow
+- openLink: ${APP_URL}
+- extendedWaitUntil:
+    visible:
+      id: login-screen
+    timeout: 20000
+- tapOn:
+    id: login-email-input
+- inputText: ${E2E_EMAIL}
+- tapOn:
+    id: login-password-input
+- inputText: ${E2E_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: login-submit-button
+- extendedWaitUntil:
+    visible: Bienvenido
+    timeout: 15000
+- tapOn: OK
+- extendedWaitUntil:
+    visible:
+      id: camera-voice-button
+    timeout: 20000
+- longPressOn:
+    id: camera-voice-button
+- extendedWaitUntil:
+    visible: "(Procesando instruccion de voz.|Error.*)"
+    timeout: 30000

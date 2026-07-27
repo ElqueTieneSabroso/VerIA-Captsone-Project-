@@ -7,80 +7,79 @@ import {
   StyleSheet,
   Alert,
 } from "react-native";
-import axios from "axios";
 
+import { login } from "../services/auth";
+import { isValidEmail } from "../utils/validation";
 export default function LoginScreen({ navigation }) {
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
-
   const iniciarSesion = async () => {
+    if (!correo.trim() || !contrasena.trim()) {
+      Alert.alert("Campos incompletos", "Ingrese su correo y contraseña.");
+      return;
+    }
+
+    if (!isValidEmail(correo)) {
+      Alert.alert("Correo inválido", "Ingrese un correo electrónico válido.");
+      return;
+    }
     try {
-      const respuesta = await axios.post(
-        "http://192.168.1.12:3000/api/auth/login",
-        {
-          correo: correo,
-          contrasena: contrasena,
-        },
-      );
-      alert(respuesta.data.mensaje);
-      navigation.replace("CameraScreen");
+      const respuesta = await login({ correo, contrasena });
+      Alert.alert("Bienvenido", respuesta.mensaje);
+      navigation.replace("Camera");
     } catch (error) {
       console.log(error);
-      if (error.response) {
-        console.log("STATUS:", error.response.status);
-        console.log("DATA:", error.response.data);
-        Alert.alert("Error", error.response.data.mensaje);
-      } else if (error.request) {
-        console.log("REQUEST:", error.request);
-        Alert.alert("Error", "El servidor no respondió.");
-      } else {
-        console.log("MENSAJE:", error.message);
-        Alert.alert("Error", error.message);
-      }
+      Alert.alert("Error", error.message || "No se pudo iniciar sesión.");
     }
   };
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>VERIA</Text>
+    <View style={styles.container} testID="login-screen">
+      <Text style={styles.title}>VerIA</Text>
       <TextInput
-        placeholder="Correo electrónico"
+        placeholder="E-mail"
+        placeholderTextColor="#E8E8E8"
         value={correo}
         onChangeText={setCorreo}
         keyboardType="email-address"
         autoCapitalize="none"
         style={styles.input}
-        accessibilityLabel="Email"
-        autoCapitalize="none"
-        keyboardType="email-address"
+        testID="login-email-input"
+        accessibilityLabel="Correo electrónico"
       />
       <TextInput
-        placeholder="Contraseña"
+        placeholder="Password"
+        placeholderTextColor="#E8E8E8"
         value={contrasena}
         onChangeText={setContrasena}
         secureTextEntry
         style={styles.input}
-        accessibilityLabel="Password"
+        testID="login-password-input"
+        accessibilityLabel="Contraseña"
       />
       <TouchableOpacity
         style={styles.button}
         onPress={iniciarSesion}
-        onPress={() => navigation.navigate("Camera")}
+        testID="login-submit-button"
+        accessibilityRole="button"
+        accessibilityLabel="Iniciar sesión"
       >
-        <Text style={styles.buttonText}>Iniciar Sesión</Text>
+        <Text style={styles.buttonText}>Log in</Text>
       </TouchableOpacity>
-
       <TouchableOpacity
-        style={styles.button}
         onPress={() => navigation.navigate("Register")}
+        testID="login-register-link"
+        accessibilityRole="button"
+        accessibilityLabel="Crear una cuenta"
       >
-        <Text style={styles.buttonText}>¿No tienes cuenta?</Text>
+        <Text style={styles.registerText}>Don't have an account?</Text>
       </TouchableOpacity>
-
       <TouchableOpacity
-        style={styles.backButton}
         onPress={() => navigation.navigate("Welcome")}
+        testID="login-back-link"
+        accessibilityRole="button"
+        accessibilityLabel="Volver a bienvenida"
       >
-        <Text style={styles.buttonText}>Regresar</Text>
+        <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
     </View>
   );
@@ -89,37 +88,69 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#171717",
     justifyContent: "center",
-    padding: 20,
+    alignItems: "center",
+    paddingHorizontal: 25,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 40,
+    color: "white",
+    fontSize: 68,
+    fontWeight: "900",
+    marginBottom: 90,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 15,
-    minHeight: 48,
+    width: "85%",
+    height: 55,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: "#36AFFF",
+    color: "white",
+    fontSize: 22,
+    paddingHorizontal: 20,
+    marginBottom: 18,
+    backgroundColor: "#171717",
+    shadowColor: "#2FA8FF",
+    shadowOpacity: 0.9,
+    shadowRadius: 18,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 14,
   },
   button: {
-    backgroundColor: "#007AFF",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-  },
-  backButton: {
-    backgroundColor: "#666",
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 10,
+    width: "85%",
+    height: 58,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 30,
+    backgroundColor: "#58B6FF",
+    borderWidth: 2,
+    borderColor: "#D8F1FF",
+    marginTop: 35,
+    shadowColor: "#2FA8FF",
+    shadowOpacity: 1,
+    shadowRadius: 22,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 18,
   },
   buttonText: {
     color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
+    fontSize: 24,
+    fontWeight: "500",
+  },
+  registerText: {
+    color: "#DDDDDD",
+    fontSize: 18,
+    marginTop: 30,
+  },
+  backText: {
+    color: "#9A9A9A",
+    fontSize: 18,
+    marginTop: 15,
   },
 });

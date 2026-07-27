@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import * as ScreenOrientation from 'expo-screen-orientation';
+import { useEffect, useState } from "react";
+import * as ScreenOrientation from "expo-screen-orientation";
 
 const BUTTON_SIZE = 88;
 const EDGE_OFFSET = 20;
@@ -10,45 +10,45 @@ function styleForOrientation(orientation) {
   switch (orientation) {
     case ScreenOrientation.Orientation.PORTRAIT_UP:
       return {
-        position: 'absolute',
+        position: "absolute",
         right: EDGE_OFFSET,
-        top: '50%',
+        top: "50%",
         marginTop: -half,
         width: BUTTON_SIZE,
         height: BUTTON_SIZE,
       };
     case ScreenOrientation.Orientation.PORTRAIT_DOWN:
       return {
-        position: 'absolute',
+        position: "absolute",
         left: EDGE_OFFSET,
-        top: '50%',
+        top: "50%",
         marginTop: -half,
         width: BUTTON_SIZE,
         height: BUTTON_SIZE,
       };
     case ScreenOrientation.Orientation.LANDSCAPE_LEFT:
       return {
-        position: 'absolute',
+        position: "absolute",
         top: EDGE_OFFSET,
-        left: '50%',
+        left: "50%",
         marginLeft: -half,
         width: BUTTON_SIZE,
         height: BUTTON_SIZE,
       };
     case ScreenOrientation.Orientation.LANDSCAPE_RIGHT:
       return {
-        position: 'absolute',
+        position: "absolute",
         bottom: EDGE_OFFSET,
-        left: '50%',
+        left: "50%",
         marginLeft: -half,
         width: BUTTON_SIZE,
         height: BUTTON_SIZE,
       };
     default:
       return {
-        position: 'absolute',
+        position: "absolute",
         right: EDGE_OFFSET,
-        top: '50%',
+        top: "50%",
         marginTop: -half,
         width: BUTTON_SIZE,
         height: BUTTON_SIZE,

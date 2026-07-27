@@ -7,50 +7,37 @@ import {
   StyleSheet,
   Text,
   View,
+  TouchableOpacity,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import {
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioRecorder,
+} from "expo-audio";
 import * as Haptics from "expo-haptics";
 import * as ScreenOrientation from "expo-screen-orientation";
 import * as Speech from "expo-speech";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { analyzeImageWithBackend } from "../services/ollama";
+import {
+  analyzeImageWithBackend,
+  analyzeVoiceCommandWithBackend,
+} from "../services/ollama";
+import { resolveCompletedRecordingUri } from "../utils/audio";
+import { pickPictureSize } from "../utils/camera";
 
-const MAX_CAPTURE_SIDE = 720;
 const DOUBLE_PRESS_DELAY_MS = 300;
+const VOICE_RECORDING_OPTIONS = {
+  ...RecordingPresets.HIGH_QUALITY,
+  directory: "document",
+};
 
-function parsePictureSize(size) {
-  const [width, height] = size.split("x").map(Number);
-
-  if (!Number.isFinite(width) || !Number.isFinite(height)) {
-    return null;
-  }
-
-  return {
-    size,
-    width,
-    height,
-    longestSide: Math.max(width, height),
-  };
-}
-
-function pickPictureSize(sizes) {
-  const parsedSizes = sizes
-    .map(parsePictureSize)
-    .filter(Boolean)
-    .sort((a, b) => b.longestSide - a.longestSide);
-
-  if (!parsedSizes.length) {
-    return undefined;
-  }
-
-  return (
-    parsedSizes.find((item) => item.longestSide <= MAX_CAPTURE_SIDE) ??
-    parsedSizes[parsedSizes.length - 1]
-  ).size;
-}
-
-export default function CameraScreen() {
+export default function CameraScreen({ navigation }) {
   const cameraRef = useRef(null);
+  const audioRecorder = useAudioRecorder(VOICE_RECORDING_OPTIONS);
+  const voicePressHeldRef = useRef(false);
+  const voiceRecordingRef = useRef(false);
   const activeRequestRef = useRef(null);
   const captureRunRef = useRef(0);
   const pressTimerRef = useRef(null);
@@ -63,21 +50,28 @@ export default function CameraScreen() {
   const [statusMessage, setStatusMessage] = useState("Listo para capturar.");
   const [lastDescription, setLastDescription] = useState("");
   const [hasError, setHasError] = useState(false);
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
 
   useEffect(() => {
-    ScreenOrientation.unlockAsync();
+    ScreenOrientation.unlockAsync().catch(() => {});
 
     return () => {
+      voicePressHeldRef.current = false;
       if (pressTimerRef.current) {
         clearTimeout(pressTimerRef.current);
       }
+      if (voiceRecordingRef.current) {
+        voiceRecordingRef.current = false;
+        audioRecorder.stop().catch(() => {});
+      }
+      setAudioModeAsync({ allowsRecording: false }).catch(() => {});
       activeRequestRef.current?.abort();
       Speech.stop();
       ScreenOrientation.lockAsync(
         ScreenOrientation.OrientationLock.PORTRAIT_UP,
-      );
+      ).catch(() => {});
     };
-  }, []);
+  }, [audioRecorder]);
 
   const announce = useCallback((message) => {
     setStatusMessage(message);
@@ -232,6 +226,95 @@ export default function CameraScreen() {
     }
   }, [announce, cameraReady, vibrate]);
 
+  const startVoiceCommand = useCallback(async () => {
+    if (!cameraReady || isProcessing || voiceRecordingRef.current) return;
+    voicePressHeldRef.current = true;
+
+    try {
+      const permissionStatus =
+        await AudioModule.requestRecordingPermissionsAsync();
+      if (!permissionStatus.granted) {
+        announce("Se necesita permiso para usar el microfono.");
+        return;
+      }
+
+      Speech.stop();
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: true,
+      });
+      await audioRecorder.prepareToRecordAsync();
+      if (!voicePressHeldRef.current) {
+        await setAudioModeAsync({ allowsRecording: false });
+        return;
+      }
+      audioRecorder.record();
+      voiceRecordingRef.current = true;
+      setIsVoiceRecording(true);
+      vibrate("selection");
+      announce("Escuchando. Suelta el boton al terminar.");
+    } catch (error) {
+      setHasError(true);
+      announce(`Error. ${error.message || "No se pudo iniciar el microfono."}`);
+    }
+  }, [announce, audioRecorder, cameraReady, isProcessing, vibrate]);
+
+  const finishVoiceCommand = useCallback(async () => {
+    voicePressHeldRef.current = false;
+    if (!voiceRecordingRef.current) return;
+
+    voiceRecordingRef.current = false;
+    setIsVoiceRecording(false);
+    setIsProcessing(true);
+    setHasError(false);
+    announce("Procesando instruccion de voz.");
+
+    const runId = captureRunRef.current + 1;
+    const requestController = new AbortController();
+    captureRunRef.current = runId;
+    activeRequestRef.current = requestController;
+
+    try {
+      await audioRecorder.stop();
+      const recorderStatus = audioRecorder.getStatus();
+      const audioUri = resolveCompletedRecordingUri(
+        recorderStatus,
+        audioRecorder.uri,
+      );
+
+      const photo = await cameraRef.current?.takePictureAsync({
+        base64: true,
+        quality: 0.25,
+        shutterSound: false,
+      });
+      if (!photo?.base64) throw new Error("No se pudo capturar la imagen.");
+
+      setCapturedPhotoUri(photo.uri ?? null);
+      const { transcription, result } = await analyzeVoiceCommandWithBackend(
+        audioUri,
+        photo.base64,
+        requestController.signal,
+      );
+
+      if (captureRunRef.current !== runId) return;
+      setLastDescription(result);
+      vibrate("success");
+      announce(`Instruccion: ${transcription}. ${result}`);
+      Speech.speak(result, { language: "es-MX", rate: 0.8, onError: () => {} });
+      setStatusMessage(result);
+    } catch (error) {
+      if (requestController.signal.aborted) return;
+      setHasError(true);
+      announce(`Error. ${error.message || "Fallo la instruccion de voz."}`);
+    } finally {
+      await setAudioModeAsync({ allowsRecording: false }).catch(() => {});
+      if (captureRunRef.current === runId) {
+        activeRequestRef.current = null;
+        setIsProcessing(false);
+      }
+    }
+  }, [announce, audioRecorder, vibrate]);
+
   const handleButtonPress = useCallback(() => {
     if (pressTimerRef.current) {
       clearTimeout(pressTimerRef.current);
@@ -265,7 +348,7 @@ export default function CameraScreen() {
 
   if (!permission) {
     return (
-      <View style={styles.centered}>
+      <View style={styles.centered} testID="camera-permission-loading">
         <ActivityIndicator size="large" color="#007AFF" />
       </View>
     );
@@ -273,7 +356,7 @@ export default function CameraScreen() {
 
   if (!permission.granted) {
     return (
-      <View style={styles.centered}>
+      <View style={styles.centered} testID="camera-permission-screen">
         <Text style={styles.permissionText} accessibilityRole="text">
           Camera access is required to describe your surroundings.
         </Text>
@@ -282,6 +365,7 @@ export default function CameraScreen() {
           onPress={requestPermission}
           accessibilityRole="button"
           accessibilityLabel="Grant camera permission"
+          testID="camera-permission-button"
         >
           <Text style={styles.permissionButtonText}>Grant Camera Access</Text>
         </Pressable>
@@ -290,7 +374,7 @@ export default function CameraScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="camera-screen">
       <CameraView
         ref={cameraRef}
         style={StyleSheet.absoluteFill}
@@ -327,21 +411,65 @@ export default function CameraScreen() {
       <Pressable
         style={({ pressed }) => [
           styles.captureButton,
-          { bottom: Math.max(insets.bottom + 12, 16) },
+          { bottom: Math.max(insets.bottom + 16, 20) },
           pressed && styles.captureButtonPressed,
         ]}
         onPress={handleButtonPress}
         disabled={!cameraReady}
         accessibilityRole="button"
         accessibilityLabel="Capture and describe scene"
+        testID="camera-capture-button"
         accessibilityHint="Press once to re-read the latest description. Press twice to cancel the current analysis or speech."
         accessibilityState={{
           disabled: !cameraReady,
           busy: isProcessing,
         }}
       >
-        <View style={styles.captureButtonInner} />
+        <Image
+          source={require("../assets/ICON_CAMERA.png")}
+          style={styles.captureButtonIcon}
+          resizeMode="contain"
+          accessibilityIgnoresInvertColors
+        />
       </Pressable>
+      <Pressable
+        style={({ pressed }) => [
+          styles.voiceButton,
+          { bottom: Math.max(insets.bottom + 16, 20) },
+          pressed && styles.captureButtonPressed,
+          (pressed || isVoiceRecording) && styles.voiceButtonActive,
+        ]}
+        onPressIn={startVoiceCommand}
+        onPressOut={finishVoiceCommand}
+        disabled={!cameraReady || isProcessing}
+        accessibilityRole="button"
+        accessibilityLabel="Dar instruccion por voz"
+        testID="camera-voice-button"
+        accessibilityHint="Manten presionado mientras hablas y suelta para enviar la instruccion."
+        accessibilityState={{
+          disabled: !cameraReady || isProcessing,
+          busy: isVoiceRecording,
+        }}
+      >
+        <Image
+          source={require("../assets/ICON_MICROPHONE.png")}
+          style={[
+            styles.voiceButtonIcon,
+            isVoiceRecording && styles.voiceButtonIconActive,
+          ]}
+          resizeMode="contain"
+          accessibilityIgnoresInvertColors
+        />
+      </Pressable>
+      <TouchableOpacity
+        style={styles.settingsButton}
+        onPress={() => navigation.navigate("Settings")}
+        testID="camera-settings-button"
+        accessibilityRole="button"
+        accessibilityLabel="Abrir configuración"
+      >
+        <Text style={styles.settingsIcon}>⚙</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -379,26 +507,39 @@ const styles = StyleSheet.create({
   },
   captureButton: {
     position: "absolute",
-    alignSelf: "center",
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 4,
-    borderColor: "#ffffff",
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    left: 16,
+    width: 116,
+    height: 96,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 10,
   },
-  captureButtonInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#ffffff",
+  captureButtonIcon: {
+    width: 108,
+    height: 84,
   },
   captureButtonPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.96 }],
+    opacity: 0.72,
+    transform: [{ scale: 0.94 }],
+  },
+  voiceButton: {
+    position: "absolute",
+    right: 16,
+    width: 116,
+    height: 96,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  voiceButtonActive: {
+    transform: [{ scale: 1.06 }],
+  },
+  voiceButtonIcon: {
+    width: 108,
+    height: 84,
+  },
+  voiceButtonIconActive: {
+    opacity: 0.68,
   },
   processingOverlay: {
     position: "absolute",
@@ -441,5 +582,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     textAlign: "center",
+  },
+  settingsButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#1E88E5",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 6, // Android
+    shadowColor: "#000", // iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    zIndex: 100,
+  },
+
+  settingsIcon: {
+    fontSize: 28,
+    color: "#FFF",
   },
 });

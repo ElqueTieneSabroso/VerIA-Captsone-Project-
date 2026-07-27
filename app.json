@@ -21,8 +21,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": ["android.permission.CAMERA"],
-      "usesCleartextTraffic": true
+      "permissions": ["android.permission.CAMERA"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,7 +38,14 @@
         {
           "initialOrientation": "DEFAULT"
         }
-      ]
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Permite que VERIA escuche tu instruccion mientras mantienes presionado el boton."
+        }
+      ],
+      "expo-asset"
     ]
   }
 }
